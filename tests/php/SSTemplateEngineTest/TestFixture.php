@@ -1,10 +1,10 @@
 <?php
 
-namespace SilverStripe\View\Tests\SSTemplateEngineTest;
+namespace SilverStripe\TemplateEngine\Tests\SSTemplateEngineTest;
 
 use ReflectionClass;
 use SilverStripe\Dev\TestOnly;
-use SilverStripe\View\SSViewer_Scope;
+use SilverStripe\TemplateEngine\ScopeManager;
 use Stringable;
 
 /**
@@ -34,7 +34,7 @@ class TestFixture implements TestOnly, Stringable
         if (preg_match('/NotSet/i', $name)) {
             return false;
         }
-        $reflectionScope = new ReflectionClass(SSViewer_Scope::class);
+        $reflectionScope = new ReflectionClass(ScopeManager::class);
         $globalProperties = $reflectionScope->getStaticPropertyValue('globalProperties');
         if (array_key_exists($name, $globalProperties)) {
             return false;

@@ -9,29 +9,25 @@ parser.
 It gets run through the php-peg parser compiler to have those comments turned into code that match parts of the
 template language, producing the executable version SSTemplateParser.php
 
-To recompile after changing this file, run this from the 'framework/View' directory via command line (in most cases
-this is: framework/src/View):
+To recompile after changing this file, run this from the 'src' directory via command line:
 
-    php ../../thirdparty/php-peg/cli.php SSTemplateParser.peg > SSTemplateParser.php
+    php ../thirdparty/php-peg/cli.php SSTemplateParser.peg > SSTemplateParser.php
 
 See the php-peg docs for more information on the parser format, and how to convert this file into SSTemplateParser.php
 
 This comment will not appear in the output
 */
 
-namespace SilverStripe\View;
+namespace SilverStripe\TemplateEngine;
 
 use SilverStripe\Core\Injector\Injector;
 use Parser;
 use InvalidArgumentException;
+use SilverStripe\TemplateEngine\Exception\SSTemplateParseException;
 
-// We want this to work when run by hand too
-if (defined('THIRDPARTY_PATH')) {
-    require_once(THIRDPARTY_PATH . '/php-peg/Parser.php');
-} else {
-    $base = dirname(__FILE__);
-    require_once($base.'/../thirdparty/php-peg/Parser.php');
-}
+// Make sure to include the base parser code
+$base = dirname(__FILE__);
+require_once($base.'/../thirdparty/php-peg/Parser.php');
 
 /**
   * This is the parser for the SilverStripe template language. It gets called on a string and uses a php-peg parser
@@ -936,7 +932,7 @@ class SSTemplateParser extends Parser implements TemplateParser
         $arguments = $res['arguments'];
 
         // Note: 'type' here is important to disable subTemplates in SSTemplateEngine::getSubtemplateFor()
-        $res['php'] = '$val .= \\SilverStripe\\View\\SSTemplateEngine::execute_template([["type" => "Includes", '.$template.'], '.$template.'], $scope->getCurrentItem(), [' .
+        $res['php'] = '$val .= \\SilverStripe\\TemplateEngine\\SSTemplateEngine::execute_template([["type" => "Includes", '.$template.'], '.$template.'], $scope->getCurrentItem(), [' .
             implode(',', $arguments)."], \$scope, true);\n";
 
         if ($this->includeDebuggingComments) { // Add include filename comments on dev sites

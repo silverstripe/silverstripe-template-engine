@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverStripe\View\Tests;
+namespace SilverStripe\TemplateEngine\Tests;
 
 use LogicException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -18,15 +18,15 @@ use SilverStripe\Security\SecurityToken;
 use SilverStripe\Model\ArrayData;
 use SilverStripe\View\Requirements;
 use SilverStripe\View\Requirements_Backend;
-use SilverStripe\View\SSTemplateParseException;
-use SilverStripe\View\SSTemplateParser;
 use SilverStripe\View\SSViewer;
-use SilverStripe\View\Tests\SSTemplateEngineTest\TestModelData;
 use SilverStripe\Model\ModelData;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
+use SilverStripe\TemplateEngine\Exception\SSTemplateParseException;
+use SilverStripe\TemplateEngine\SSTemplateEngine;
+use SilverStripe\TemplateEngine\SSTemplateParser;
+use SilverStripe\TemplateEngine\Tests\SSTemplateEngineTest\TestModelData;
 use SilverStripe\View\Exception\MissingTemplateException;
-use SilverStripe\View\SSTemplateEngine;
 use SilverStripe\View\ViewLayerData;
 use stdClass;
 

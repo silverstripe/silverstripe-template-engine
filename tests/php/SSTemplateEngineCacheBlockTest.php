@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverStripe\View\Tests;
+namespace SilverStripe\TemplateEngine\Tests;
 
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Core\Kernel;
@@ -9,8 +9,8 @@ use SilverStripe\Versioned\Versioned;
 use Psr\SimpleCache\CacheInterface;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Control\Director;
-use SilverStripe\View\SSTemplateEngine;
-use SilverStripe\View\SSTemplateParseException;
+use SilverStripe\TemplateEngine\Exception\SSTemplateParseException;
+use SilverStripe\TemplateEngine\SSTemplateEngine;
 use SilverStripe\View\ViewLayerData;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Adapter\NullAdapter;

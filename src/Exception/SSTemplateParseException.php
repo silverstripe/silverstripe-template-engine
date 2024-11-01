@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverStripe\View;
+namespace SilverStripe\TemplateEngine\Exception;
 
 use Exception;
 

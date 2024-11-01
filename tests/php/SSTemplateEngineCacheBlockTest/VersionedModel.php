@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverStripe\View\Tests\SSTemplateEngineCacheBlockTest;
+namespace SilverStripe\TemplateEngine\Tests\SSTemplateEngineCacheBlockTest;
 
 use SilverStripe\Dev\TestOnly;
 use SilverStripe\ORM\DataObject;

@@ -7,19 +7,16 @@ WARNING: This file has been machine generated. Do not edit it, or your changes w
 
 
 
-namespace SilverStripe\View;
+namespace SilverStripe\TemplateEngine;
 
 use SilverStripe\Core\Injector\Injector;
 use Parser;
 use InvalidArgumentException;
+use SilverStripe\TemplateEngine\Exception\SSTemplateParseException;
 
-// We want this to work when run by hand too
-if (defined('THIRDPARTY_PATH')) {
-    require_once(THIRDPARTY_PATH . '/php-peg/Parser.php');
-} else {
-    $base = dirname(__FILE__);
-    require_once($base.'/../thirdparty/php-peg/Parser.php');
-}
+// Make sure to include the base parser code
+$base = dirname(__FILE__);
+require_once($base.'/../thirdparty/php-peg/Parser.php');
 
 /**
   * This is the parser for the SilverStripe template language. It gets called on a string and uses a php-peg parser
@@ -3894,7 +3891,7 @@ class SSTemplateParser extends Parser implements TemplateParser
         $arguments = $res['arguments'];
 
         // Note: 'type' here is important to disable subTemplates in SSTemplateEngine::getSubtemplateFor()
-        $res['php'] = '$val .= \\SilverStripe\\View\\SSTemplateEngine::execute_template([["type" => "Includes", '.$template.'], '.$template.'], $scope->getCurrentItem(), [' .
+        $res['php'] = '$val .= \\SilverStripe\\TemplateEngine\\SSTemplateEngine::execute_template([["type" => "Includes", '.$template.'], '.$template.'], $scope->getCurrentItem(), [' .
             implode(',', $arguments)."], \$scope, true);\n";
 
         if ($this->includeDebuggingComments) { // Add include filename comments on dev sites

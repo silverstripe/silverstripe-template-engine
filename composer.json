@@ -1,0 +1,39 @@
+{
+    "name": "silverstripe/template-engine",
+    "description": "Template engine for rendering templates in Silverstripe CMS projects",
+    "type": "silverstripe-vendormodule",
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Silverstripe",
+            "homepage": "https://silverstripe.com"
+        },
+        {
+            "name": "The Silverstripe Community",
+            "homepage": "https://silverstripe.org"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "silverstripe/framework": "^6"
+    },
+    "require-dev": {
+        "silverstripe/recipe-testing": "^4",
+        "silverstripe/standards": "^1",
+        "squizlabs/php_codesniffer": "^3",
+        "phpstan/extension-installer": "^1.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "SilverStripe\\TemplateEngine\\": "src/",
+            "SilverStripe\\TemplateEngine\\Tests\\": "tests/php/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}

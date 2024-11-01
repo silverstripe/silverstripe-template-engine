@@ -1,12 +1,15 @@
 <?php
 
-namespace SilverStripe\View;
+namespace SilverStripe\TemplateEngine;
 
 use InvalidArgumentException;
 use Iterator;
 use LogicException;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\Core\Injector\Injector;
+use SilverStripe\View\SSViewer;
+use SilverStripe\View\TemplateGlobalProvider;
+use SilverStripe\View\ViewLayerData;
 
 /**
  * This tracks the current scope for an SSViewer instance. It has three goals:
@@ -31,7 +34,7 @@ use SilverStripe\Core\Injector\Injector;
  * when in a loop or with tag the end result becomes the new scope, but for injections, we throw away the lookup
  * and revert back to the original scope once we've got the value we're after
  */
-class SSViewer_Scope
+class ScopeManager
 {
     const ITEM = 0;
     const ITEM_ITERATOR = 1;
@@ -124,7 +127,7 @@ class SSViewer_Scope
         ?ViewLayerData $item,
         array $overlay = [],
         array $underlay = [],
-        ?SSViewer_Scope $inheritedScope = null
+        ?ScopeManager $inheritedScope = null
     ) {
         $this->item = $item;
 
@@ -150,7 +153,7 @@ class SSViewer_Scope
     /**
      * Called at the start of every lookup chain by SSTemplateParser to indicate a new lookup from local scope
      *
-     * @return SSViewer_Scope
+     * @return ScopeManager
      */
     public function locally()
     {
@@ -218,8 +221,8 @@ class SSViewer_Scope
 
         if ($overlayIndex !== false) {
             $itemStack = $this->getItemStack();
-            if (!$this->overlay && isset($itemStack[$overlayIndex][SSViewer_Scope::ITEM_OVERLAY])) {
-                $this->overlay = $itemStack[$overlayIndex][SSViewer_Scope::ITEM_OVERLAY];
+            if (!$this->overlay && isset($itemStack[$overlayIndex][ScopeManager::ITEM_OVERLAY])) {
+                $this->overlay = $itemStack[$overlayIndex][ScopeManager::ITEM_OVERLAY];
             }
         }
 
@@ -251,27 +254,27 @@ class SSViewer_Scope
      * Store the current overlay (as it doesn't directly apply to the new scope
      * that's being pushed). We want to store the overlay against the next item
      * "up" in the stack (hence upIndex), rather than the current item, because
-     * SSViewer_Scope::obj() has already been called and pushed the new item to
+     * ScopeManager::obj() has already been called and pushed the new item to
      * the stack by this point
      */
     public function pushScope(): static
     {
         $newLocalIndex = count($this->itemStack ?? []) - 1;
 
-        $this->popIndex = $this->itemStack[$newLocalIndex][SSViewer_Scope::POP_INDEX] = $this->localIndex;
+        $this->popIndex = $this->itemStack[$newLocalIndex][ScopeManager::POP_INDEX] = $this->localIndex;
         $this->localIndex = $newLocalIndex;
 
         // $Up now becomes the parent scope - the parent of the current <% loop %> or <% with %>
-        $this->upIndex = $this->itemStack[$newLocalIndex][SSViewer_Scope::UP_INDEX] = $this->popIndex;
+        $this->upIndex = $this->itemStack[$newLocalIndex][ScopeManager::UP_INDEX] = $this->popIndex;
 
         // We normally keep any previous itemIterator around, so local $Up calls reference the right element. But
         // once we enter a new global scope, we need to make sure we use a new one
-        $this->itemIterator = $this->itemStack[$newLocalIndex][SSViewer_Scope::ITEM_ITERATOR] = null;
+        $this->itemIterator = $this->itemStack[$newLocalIndex][ScopeManager::ITEM_ITERATOR] = null;
 
         $upIndex = $this->getUpIndex() ?: 0;
 
         $itemStack = $this->getItemStack();
-        $itemStack[$upIndex][SSViewer_Scope::ITEM_OVERLAY] = $this->overlay;
+        $itemStack[$upIndex][ScopeManager::ITEM_OVERLAY] = $this->overlay;
         $this->setItemStack($itemStack);
 
         // Remove the overlay when we're changing to a new scope, as values in
@@ -297,7 +300,7 @@ class SSViewer_Scope
 
         if ($upIndex !== null) {
             $itemStack = $this->getItemStack();
-            $this->overlay = $itemStack[$upIndex][SSViewer_Scope::ITEM_OVERLAY];
+            $this->overlay = $itemStack[$upIndex][ScopeManager::ITEM_OVERLAY];
         }
 
         $this->localIndex = $this->popIndex;
@@ -331,8 +334,8 @@ class SSViewer_Scope
             // which causes some iterators to no longer be iterable for some reason
             $this->itemIteratorTotal = $this->item->getIteratorCount();
 
-            $this->itemStack[$this->localIndex][SSViewer_Scope::ITEM_ITERATOR] = $this->itemIterator;
-            $this->itemStack[$this->localIndex][SSViewer_Scope::ITEM_ITERATOR_TOTAL] = $this->itemIteratorTotal;
+            $this->itemStack[$this->localIndex][ScopeManager::ITEM_ITERATOR] = $this->itemIterator;
+            $this->itemStack[$this->localIndex][ScopeManager::ITEM_ITERATOR_TOTAL] = $this->itemIteratorTotal;
         } else {
             $this->itemIterator->next();
         }
@@ -487,11 +490,11 @@ class SSViewer_Scope
      */
     protected function cacheGlobalProperties()
     {
-        if (SSViewer_Scope::$globalProperties !== null) {
+        if (ScopeManager::$globalProperties !== null) {
             return;
         }
 
-        SSViewer_Scope::$globalProperties = SSViewer::getMethodsFromProvider(
+        ScopeManager::$globalProperties = SSViewer::getMethodsFromProvider(
             TemplateGlobalProvider::class,
             'get_template_global_variables'
         );
@@ -502,11 +505,11 @@ class SSViewer_Scope
      */
     protected function cacheIteratorProperties()
     {
-        if (SSViewer_Scope::$iteratorProperties !== null) {
+        if (ScopeManager::$iteratorProperties !== null) {
             return;
         }
 
-        SSViewer_Scope::$iteratorProperties = SSViewer::getMethodsFromProvider(
+        ScopeManager::$iteratorProperties = SSViewer::getMethodsFromProvider(
             TemplateIteratorProvider::class,
             'get_template_iterator_variables',
             true // Call non-statically
@@ -551,8 +554,8 @@ class SSViewer_Scope
         }
 
         // Then for iterator-specific overrides
-        if (array_key_exists($property, SSViewer_Scope::$iteratorProperties)) {
-            $source = SSViewer_Scope::$iteratorProperties[$property];
+        if (array_key_exists($property, ScopeManager::$iteratorProperties)) {
+            $source = ScopeManager::$iteratorProperties[$property];
             /** @var TemplateIteratorProvider $implementor */
             $implementor = $source['implementor'];
             if ($this->itemIterator) {
@@ -571,9 +574,9 @@ class SSViewer_Scope
         }
 
         // And finally for global overrides
-        if (array_key_exists($property, SSViewer_Scope::$globalProperties)) {
+        if (array_key_exists($property, ScopeManager::$globalProperties)) {
             return $this->getInjectedValue(
-                SSViewer_Scope::$globalProperties[$property],
+                ScopeManager::$globalProperties[$property],
                 $property,
                 $args,
                 $getRaw
