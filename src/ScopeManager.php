@@ -36,13 +36,13 @@ use SilverStripe\View\ViewLayerData;
  */
 class ScopeManager
 {
-    const ITEM = 0;
-    const ITEM_ITERATOR = 1;
-    const ITEM_ITERATOR_TOTAL = 2;
-    const POP_INDEX = 3;
-    const UP_INDEX = 4;
-    const CURRENT_INDEX = 5;
-    const ITEM_OVERLAY = 6;
+    public const ITEM = 0;
+    public const ITEM_ITERATOR = 1;
+    public const ITEM_ITERATOR_TOTAL = 2;
+    public const POP_INDEX = 3;
+    public const UP_INDEX = 4;
+    public const CURRENT_INDEX = 5;
+    public const ITEM_OVERLAY = 6;
 
     /**
      * The stack of previous items ("scopes") - an indexed array of: item, item iterator, item iterator total,
@@ -608,7 +608,8 @@ class ScopeManager
             return null;
         }
 
-        // TemplateGlobalProviders can provide an explicit service to cast to which works outside of the regular cast flow
+        // TemplateGlobalProviders can provide an explicit service to cast
+        // to which works outside of the regular cast flow
         if (!$getRaw && isset($source['casting'])) {
             $castObject = Injector::inst()->create($source['casting'], $property);
             if (!ClassInfo::hasMethod($castObject, 'setValue')) {

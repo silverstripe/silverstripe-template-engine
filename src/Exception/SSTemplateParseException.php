@@ -11,7 +11,6 @@ use Exception;
  */
 class SSTemplateParseException extends Exception
 {
-
     /**
      * SSTemplateParseException constructor.
      * @param string $message

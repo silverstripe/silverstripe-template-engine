@@ -11,7 +11,6 @@ use SilverStripe\Model\ModelData;
  */
 class TestModelData extends ModelData implements TestOnly
 {
-
     private static $default_cast = 'Text';
 
     private static $casting = [

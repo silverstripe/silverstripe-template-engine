@@ -94,8 +94,12 @@ class SSTemplateEngine implements TemplateEngine, Flushable
      * template as properties. These override properties and methods with the same name from $data and from global
      * template providers.
      */
-    public static function execute_template(array|string $template, ViewLayerData $data, array $overlay = [], ?ScopeManager $scope = null): string
-    {
+    public static function execute_template(
+        array|string $template,
+        ViewLayerData $data,
+        array $overlay = [],
+        ?ScopeManager $scope = null
+    ): string {
         $engine = static::create($template);
         return $engine->render($data, $overlay, $scope);
     }
@@ -148,8 +152,12 @@ class SSTemplateEngine implements TemplateEngine, Flushable
         return (bool) $this->findTemplate($templateCandidates);
     }
 
-    public function renderString(string $template, ViewLayerData $model, array $overlay = [], bool $cache = true): string
-    {
+    public function renderString(
+        string $template,
+        ViewLayerData $model,
+        array $overlay = [],
+        bool $cache = true
+    ): string {
         $hash = sha1($template);
         $cacheFile = TEMP_PATH . DIRECTORY_SEPARATOR . ".cache.$hash";
 
@@ -311,7 +319,7 @@ class SSTemplateEngine implements TemplateEngine, Flushable
             echo "<h2>Template: $cacheFile</h2>";
             echo '<pre>';
             foreach ($lines as $num => $line) {
-                echo str_pad($num+1, 5) . htmlentities($line, ENT_COMPAT, 'UTF-8');
+                echo str_pad($num + 1, 5) . htmlentities($line, ENT_COMPAT, 'UTF-8');
             }
             echo '</pre>';
         }

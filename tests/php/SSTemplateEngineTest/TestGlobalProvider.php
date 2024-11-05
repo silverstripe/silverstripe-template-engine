@@ -7,7 +7,6 @@ use SilverStripe\View\TemplateGlobalProvider;
 
 class TestGlobalProvider implements TemplateGlobalProvider, TestOnly
 {
-
     public static function get_template_global_variables()
     {
         return [

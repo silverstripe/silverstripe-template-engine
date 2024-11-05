@@ -9,7 +9,6 @@ use SilverStripe\Model\ModelData;
 
 class CacheTestData extends ModelData implements TestOnly
 {
-
     public $testWithCalls = 0;
     public $testLoopCalls = 0;
 
