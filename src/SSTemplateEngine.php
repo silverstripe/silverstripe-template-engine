@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverStripe\View;
+namespace SilverStripe\TemplateEngine;
 
 use InvalidArgumentException;
 use Psr\SimpleCache\CacheInterface;
@@ -14,6 +14,10 @@ use SilverStripe\Core\Path;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\Security\Permission;
 use SilverStripe\View\Exception\MissingTemplateException;
+use SilverStripe\View\SSViewer;
+use SilverStripe\View\TemplateEngine;
+use SilverStripe\View\ThemeResourceLoader;
+use SilverStripe\View\ViewLayerData;
 
 /**
  * Parses template files with an *.ss file extension, or strings representing templates in that format.
@@ -90,8 +94,12 @@ class SSTemplateEngine implements TemplateEngine, Flushable
      * template as properties. These override properties and methods with the same name from $data and from global
      * template providers.
      */
-    public static function execute_template(array|string $template, ViewLayerData $data, array $overlay = [], ?SSViewer_Scope $scope = null): string
-    {
+    public static function execute_template(
+        array|string $template,
+        ViewLayerData $data,
+        array $overlay = [],
+        ?ScopeManager $scope = null
+    ): string {
         $engine = static::create($template);
         return $engine->render($data, $overlay, $scope);
     }
@@ -144,8 +152,12 @@ class SSTemplateEngine implements TemplateEngine, Flushable
         return (bool) $this->findTemplate($templateCandidates);
     }
 
-    public function renderString(string $template, ViewLayerData $model, array $overlay = [], bool $cache = true): string
-    {
+    public function renderString(
+        string $template,
+        ViewLayerData $model,
+        array $overlay = [],
+        bool $cache = true
+    ): string {
         $hash = sha1($template);
         $cacheFile = TEMP_PATH . DIRECTORY_SEPARATOR . ".cache.$hash";
 
@@ -167,7 +179,7 @@ class SSTemplateEngine implements TemplateEngine, Flushable
         return $output;
     }
 
-    public function render(ViewLayerData $model, array $overlay = [], ?SSViewer_Scope $scope = null): string
+    public function render(ViewLayerData $model, array $overlay = [], ?ScopeManager $scope = null): string
     {
         SSTemplateEngine::$topLevel[] = $model;
         $template = $this->chosen;
@@ -221,7 +233,7 @@ class SSTemplateEngine implements TemplateEngine, Flushable
                 // Select the right template and render if the template exists
                 $subtemplateViewer->setTemplate($sub);
                 // If there's no template for that underlay, just don't render anything.
-                // This mirrors how SSViewer_Scope handles null values.
+                // This mirrors how ScopeManager handles null values.
                 if (!$subtemplateViewer->chosen) {
                     return null;
                 }
@@ -293,27 +305,27 @@ class SSTemplateEngine implements TemplateEngine, Flushable
      * @param ViewLayerData $model The model to use as the root scope for the template
      * @param array $overlay Any variables to layer on top of the scope
      * @param array $underlay Any variables to layer underneath the scope
-     * @param SSViewer_Scope|null $inheritedScope The current scope of a parent template including a sub-template
+     * @param ScopeManager|null $inheritedScope The current scope of a parent template including a sub-template
      */
     protected function includeGeneratedTemplate(
         string $cacheFile,
         ViewLayerData $model,
         array $overlay,
         array $underlay,
-        ?SSViewer_Scope $inheritedScope = null
+        ?ScopeManager $inheritedScope = null
     ): string {
         if (isset($_GET['showtemplate']) && $_GET['showtemplate'] && Permission::check('ADMIN')) {
             $lines = file($cacheFile ?? '');
             echo "<h2>Template: $cacheFile</h2>";
             echo '<pre>';
             foreach ($lines as $num => $line) {
-                echo str_pad($num+1, 5) . htmlentities($line, ENT_COMPAT, 'UTF-8');
+                echo str_pad($num + 1, 5) . htmlentities($line, ENT_COMPAT, 'UTF-8');
             }
             echo '</pre>';
         }
 
         $cache = $this->getPartialCacheStore();
-        $scope = new SSViewer_Scope($model, $overlay, $underlay, $inheritedScope);
+        $scope = new ScopeManager($model, $overlay, $underlay, $inheritedScope);
         $val = '';
 
         // Placeholder for values exposed to $cacheFile

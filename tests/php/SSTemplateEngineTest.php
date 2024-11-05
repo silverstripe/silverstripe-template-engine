@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverStripe\View\Tests;
+namespace SilverStripe\TemplateEngine\Tests;
 
 use LogicException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -18,15 +18,15 @@ use SilverStripe\Security\SecurityToken;
 use SilverStripe\Model\ArrayData;
 use SilverStripe\View\Requirements;
 use SilverStripe\View\Requirements_Backend;
-use SilverStripe\View\SSTemplateParseException;
-use SilverStripe\View\SSTemplateParser;
 use SilverStripe\View\SSViewer;
-use SilverStripe\View\Tests\SSTemplateEngineTest\TestModelData;
 use SilverStripe\Model\ModelData;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
+use SilverStripe\TemplateEngine\Exception\SSTemplateParseException;
+use SilverStripe\TemplateEngine\SSTemplateEngine;
+use SilverStripe\TemplateEngine\SSTemplateParser;
+use SilverStripe\TemplateEngine\Tests\SSTemplateEngineTest\TestModelData;
 use SilverStripe\View\Exception\MissingTemplateException;
-use SilverStripe\View\SSTemplateEngine;
 use SilverStripe\View\ViewLayerData;
 use stdClass;
 
@@ -59,7 +59,10 @@ class SSTemplateEngineTest extends SapphireTest
         $data = new ArrayData([ 'Var' => 'var value' ]);
         $engine = new SSTemplateEngine('SSTemplateEngineTestPartialTemplate');
         $result = $engine->render(new ViewLayerData($data));
-        $this->assertEquals('Test partial template: var value', trim(preg_replace("/<!--.*-->/U", '', $result ?? '') ?? ''));
+        $this->assertEquals(
+            'Test partial template: var value',
+            trim(preg_replace("/<!--.*-->/U", '', $result ?? '') ?? '')
+        );
     }
 
     /**
@@ -70,7 +73,10 @@ class SSTemplateEngineTest extends SapphireTest
         $data = new ArrayData([ 'Var' => 'phpinfo' ]);
         $engine = new SSTemplateEngine('SSTemplateEngineTestPartialTemplate');
         $result = $engine->render(new ViewLayerData($data));
-        $this->assertEquals('Test partial template: phpinfo', trim(preg_replace("/<!--.*-->/U", '', $result ?? '') ?? ''));
+        $this->assertEquals(
+            'Test partial template: phpinfo',
+            trim(preg_replace("/<!--.*-->/U", '', $result ?? '') ?? '')
+        );
     }
 
     public function testIncludeScopeInheritance()
@@ -272,7 +278,9 @@ class SSTemplateEngineTest extends SapphireTest
         );
         $this->assertEquals(
             'zreferencez',
-            $this->render('$SSTemplateEngineTest_GlobalThatTakesArguments($SSTemplateEngineTest_GlobalReferencedByString)')
+            $this->render(
+                '$SSTemplateEngineTest_GlobalThatTakesArguments($SSTemplateEngineTest_GlobalReferencedByString)'
+            )
         );
     }
 
@@ -295,7 +303,10 @@ class SSTemplateEngineTest extends SapphireTest
     public function testGlobalVariablesReturnNull()
     {
         $this->assertEquals('<p></p>', $this->render('<p>$SSTemplateEngineTest_GlobalReturnsNull</p>'));
-        $this->assertEquals('<p></p>', $this->render('<p>$SSTemplateEngineTest_GlobalReturnsNull.Chained.Properties</p>'));
+        $this->assertEquals(
+            '<p></p>',
+            $this->render('<p>$SSTemplateEngineTest_GlobalReturnsNull.Chained.Properties</p>')
+        );
     }
 
     public function testCoreGlobalVariableCalls()
@@ -1116,7 +1127,9 @@ after'
 
         $this->assertEquals(
             '<p>A Bare String</p><p>B Bare String</p><p></p>',
-            $this->render('<% include SSTemplateEngineTestIncludeWithArguments Arg1=A Bare String, Arg2=B Bare String %>')
+            $this->render(
+                '<% include SSTemplateEngineTestIncludeWithArguments Arg1=A Bare String, Arg2=B Bare String %>'
+            )
         );
 
         $this->assertEquals(
@@ -1170,7 +1183,7 @@ after'
             'A - B - A',
             $this->render(
                 '<% include SSTemplateEngineTestIncludeScopeInheritanceWithArgsInWith Title="A" %>',
-                new ArrayData(['Item' => new ArrayData(['Title' =>'B'])])
+                new ArrayData(['Item' => new ArrayData(['Title' => 'B'])])
             )
         );
 
@@ -1182,7 +1195,7 @@ after'
                     [
                     'Item' => new ArrayData(
                         [
-                        'Title' =>'B', 'NestedItem' => new ArrayData(['Title' => 'C'])
+                        'Title' => 'B', 'NestedItem' => new ArrayData(['Title' => 'C'])
                         ]
                     )]
                 )
@@ -1197,7 +1210,7 @@ after'
                     [
                     'Item' => new ArrayData(
                         [
-                        'Title' =>'B', 'NestedItem' => new ArrayData(['Title' => 'C'])
+                        'Title' => 'B', 'NestedItem' => new ArrayData(['Title' => 'C'])
                         ]
                     )]
                 )
@@ -1215,7 +1228,10 @@ after'
             ]
         );
 
-        $res = $this->render('<% include SSTemplateEngineTestIncludeObjectArguments A=$Nested.Object, B=$Object %>', $data);
+        $res = $this->render(
+            '<% include SSTemplateEngineTestIncludeObjectArguments A=$Nested.Object, B=$Object %>',
+            $data
+        );
         $this->assertEqualIgnoringWhitespace('A B', $res, 'Objects can be passed as named arguments');
     }
 
@@ -1554,7 +1570,11 @@ after'
 
         //test MultipleOf 10
         $result = $this->render('<% loop Set %><% if MultipleOf(10,1) %>$Number<% end_if %><% end_loop %>', $data);
-        $this->assertEquals("10", $result, "Only numbers that are multiples of 10 (with 1-based indexing) are returned");
+        $this->assertEquals(
+            "10",
+            $result,
+            "Only numbers that are multiples of 10 (with 1-based indexing) are returned"
+        );
 
         //test MultipleOf 9 zero-based
         $result = $this->render('<% loop Set %><% if MultipleOf(9,0) %>$Number<% end_if %><% end_loop %>', $data);
@@ -1932,7 +1952,7 @@ after'
     public function testRenderWithSourceFileComments(string $name, string $expected)
     {
         SSViewer::config()->set('source_file_comments', true);
-        $this->_renderWithSourceFileComments('SSTemplateEngineTestComments/' . $name, $expected);
+        $this->renderWithSourceFileComments('SSTemplateEngineTestComments/' . $name, $expected);
     }
 
     public static function provideRenderWithMissingTemplate(): array
@@ -1957,7 +1977,8 @@ after'
     public function testRenderWithMissingTemplate(string|array $templateCandidates): void
     {
         if (empty($templateCandidates)) {
-            $message = 'No template to render. Try calling setTemplate() or passing template candidates into the constructor.';
+            $message = 'No template to render. Try calling setTemplate() or passing template candidates'
+            . ' into the constructor.';
         } else {
             $message = 'None of the following templates could be found: '
                 . print_r($templateCandidates, true)
@@ -2077,7 +2098,8 @@ after'
         $this->assertEquals(
             1,
             $data->testWithCalls,
-            'SSTemplateEngineTest_CacheTestData::TestWithCall() should only be called once. Subsequent calls should be cached'
+            'SSTemplateEngineTest_CacheTestData::TestWithCall() should only be called once.'
+            . ' Subsequent calls should be cached'
         );
 
         $data = new SSTemplateEngineTest\CacheTestData();
@@ -2092,7 +2114,8 @@ after'
         $this->assertEquals(
             1,
             $data->testLoopCalls,
-            'SSTemplateEngineTest_CacheTestData::TestLoopCall() should only be called once. Subsequent calls should be cached'
+            'SSTemplateEngineTest_CacheTestData::TestLoopCall() should only be called once.'
+            . ' Subsequent calls should be cached'
         );
     }
 
@@ -2227,8 +2250,12 @@ after'
     /**
      * Small helper to render templates from strings
      */
-    private function render(string $templateString, mixed $data = null, array $overlay = [], bool $cache = false): string
-    {
+    private function render(
+        string $templateString,
+        mixed $data = null,
+        array $overlay = [],
+        bool $cache = false
+    ): string {
         $engine = new SSTemplateEngine();
         if ($data === null) {
             $data = new SSTemplateEngineTest\TestFixture();
@@ -2237,7 +2264,7 @@ after'
         return trim('' . $engine->renderString($templateString, $data, $overlay, $cache));
     }
 
-    private function _renderWithSourceFileComments($name, $expected)
+    private function renderWithSourceFileComments($name, $expected)
     {
         $viewer = new SSViewer([$name]);
         $data = new ArrayData([]);
@@ -2266,7 +2293,7 @@ after'
     {
         foreach ($expected as $expectedStr) {
             $this->assertTrue(
-                (boolean) preg_match("/{$expectedStr}/", $result ?? ''),
+                (bool) preg_match("/{$expectedStr}/", $result ?? ''),
                 "Didn't find '{$expectedStr}' in:\n{$result}"
             );
         }

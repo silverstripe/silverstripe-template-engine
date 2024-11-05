@@ -1,16 +1,15 @@
 <?php
 
-namespace SilverStripe\View;
+namespace SilverStripe\TemplateEngine;
 
 /**
  * Interface that is implemented by any classes that want to expose a method that can be called in any
  * scope in a template that returns values dependent on the state of the iterator of the current scope.
  *
- * SSViewer_BasicIteratorSupport is an example of this. See also @TemplateGlobalProvider
+ * BasicIteratorSupport is an example of this. See also @TemplateGlobalProvider
  */
 interface TemplateIteratorProvider
 {
-
     /**
      * Called by SSViewer to get a list of iterator variables to expose to the template, the instance method to call
      * on an instance of this class to get the value for those variables, and the class to use for casting the returned

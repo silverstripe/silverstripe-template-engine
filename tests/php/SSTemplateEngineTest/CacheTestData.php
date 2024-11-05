@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverStripe\View\Tests\SSTemplateEngineTest;
+namespace SilverStripe\TemplateEngine\Tests\SSTemplateEngineTest;
 
 use SilverStripe\Dev\TestOnly;
 use SilverStripe\Model\List\ArrayList;
@@ -9,7 +9,6 @@ use SilverStripe\Model\ModelData;
 
 class CacheTestData extends ModelData implements TestOnly
 {
-
     public $testWithCalls = 0;
     public $testLoopCalls = 0;
 

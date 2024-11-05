@@ -1,13 +1,12 @@
 <?php
 
-namespace SilverStripe\View\Tests\SSTemplateEngineTest;
+namespace SilverStripe\TemplateEngine\Tests\SSTemplateEngineTest;
 
 use SilverStripe\Dev\TestOnly;
 use SilverStripe\View\TemplateGlobalProvider;
 
 class TestGlobalProvider implements TemplateGlobalProvider, TestOnly
 {
-
     public static function get_template_global_variables()
     {
         return [

@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverStripe\View\Tests\SSTemplateEngineTest;
+namespace SilverStripe\TemplateEngine\Tests\SSTemplateEngineTest;
 
 use SilverStripe\Dev\TestOnly;
 use SilverStripe\Model\ModelData;
@@ -11,7 +11,6 @@ use SilverStripe\Model\ModelData;
  */
 class TestModelData extends ModelData implements TestOnly
 {
-
     private static $default_cast = 'Text';
 
     private static $casting = [

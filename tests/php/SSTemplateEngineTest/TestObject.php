@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverStripe\View\Tests\SSTemplateEngineTest;
+namespace SilverStripe\TemplateEngine\Tests\SSTemplateEngineTest;
 
 use SilverStripe\Dev\TestOnly;
 use SilverStripe\ORM\DataObject;

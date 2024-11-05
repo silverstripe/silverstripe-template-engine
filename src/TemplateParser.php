@@ -1,13 +1,12 @@
 <?php
 
-namespace SilverStripe\View;
+namespace SilverStripe\TemplateEngine;
 
 /**
  * This interface needs to be implemented by any template parser that is used in SSViewer
  */
 interface TemplateParser
 {
-
     /**
      * Compiles some passed template source code into the php code that will execute as per the template source.
      *
@@ -16,5 +15,9 @@ interface TemplateParser
      * @param bool $includeDebuggingComments True is debugging comments should be included in the output
      * @return string The php that, when executed (via include or exec) will behave as per the template source
      */
-    public function compileString(string $string, string $templateName = "", bool $includeDebuggingComments = false): string;
+    public function compileString(
+        string $string,
+        string $templateName = "",
+        bool $includeDebuggingComments = false
+    ): string;
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverStripe\View\Tests;
+namespace SilverStripe\TemplateEngine\Tests;
 
 use SilverStripe\Control\Director;
 use SilverStripe\Dev\SapphireTest;
@@ -8,7 +8,7 @@ use Psr\SimpleCache\CacheInterface;
 use ReflectionMethod;
 use SilverStripe\Core\Manifest\ModuleLoader;
 use SilverStripe\Core\Manifest\ModuleManifest;
-use SilverStripe\View\SSTemplateEngine;
+use SilverStripe\TemplateEngine\SSTemplateEngine;
 use SilverStripe\View\ThemeManifest;
 use SilverStripe\View\ThemeResourceLoader;
 

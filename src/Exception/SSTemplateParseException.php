@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverStripe\View;
+namespace SilverStripe\TemplateEngine\Exception;
 
 use Exception;
 
@@ -11,7 +11,6 @@ use Exception;
  */
 class SSTemplateParseException extends Exception
 {
-
     /**
      * SSTemplateParseException constructor.
      * @param string $message

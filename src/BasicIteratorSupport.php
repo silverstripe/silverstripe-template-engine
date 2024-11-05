@@ -1,12 +1,12 @@
 <?php
 
-namespace SilverStripe\View;
+namespace SilverStripe\TemplateEngine;
 
 /**
  * Defines an extra set of basic methods that can be used in templates
  * that are not defined on sub-classes of {@link ModelData}.
  */
-class SSViewer_BasicIteratorSupport implements TemplateIteratorProvider
+class BasicIteratorSupport implements TemplateIteratorProvider
 {
     /**
      * @var int
