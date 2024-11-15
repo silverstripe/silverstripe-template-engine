@@ -5342,9 +5342,11 @@ EOC;
     protected function includeDebuggingComments(string $code, string $templateName): string
     {
         // If this template contains a doctype, put it right after it,
-        // if not, put it after the <html> tag to avoid IE glitches
-        if (stripos($code ?? '', "<!doctype") !== false) {
-            $code = preg_replace('/(<!doctype[^>]*("[^"]")*[^>]*>)/im', "$1\r\n<!-- template $templateName -->", $code ?? '');
+        // if not, put it after the <html> tag to avoid IE glitches.
+        // Some cached templates will have a preg_match looking for the doctype, so we use a
+        // negative lookbehind to exclude that from our matches.
+        if (preg_match('/(?<!preg_match\(\'\/)<!doctype/i', $code)) {
+            $code = preg_replace('/((?<!preg_match\(\'\/)<!doctype[^>]*("[^"]")*[^>]*>)/im', "$1\r\n<!-- template $templateName -->", $code ?? '');
             $code .= "\r\n" . '$val .= \'<!-- end template ' . $templateName . ' -->\';';
         } elseif (stripos($code ?? '', "<html") !== false) {
             $code = preg_replace_callback('/(.*)(<html[^>]*>)(.*)/i', function ($matches) use ($templateName) {
