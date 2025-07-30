@@ -35,5 +35,10 @@
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true
         }
+    },
+    "extra": {
+        "expose": [
+            "client/dist"
+        ]
     }
 }

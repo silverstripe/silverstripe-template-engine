@@ -3,6 +3,7 @@
 namespace SilverStripe\TemplateEngine;
 
 use InvalidArgumentException;
+use Masterminds\HTML5;
 use Psr\SimpleCache\CacheInterface;
 use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Configurable;
@@ -13,6 +14,7 @@ use SilverStripe\Core\Kernel;
 use SilverStripe\Core\Path;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\Security\Permission;
+use SilverStripe\TemplateEngine\Middleware\CMSPreviewMiddleware;
 use SilverStripe\View\Exception\MissingTemplateException;
 use SilverStripe\View\SSViewer;
 use SilverStripe\View\TemplateEngine;
@@ -243,6 +245,154 @@ class SSTemplateEngine implements TemplateEngine, Flushable
         }
 
         $output = $this->includeGeneratedTemplate($cacheFile, $model, $overlay, $underlay, $scope);
+
+        if (CMSPreviewMiddleware::isCmsPreview()) {
+            // Remove the nasty comments inside elements.
+            // @TODO This is a really awfully bad nasty way to remove the comments from attributes... It'll do for now.
+            //       The main downsides to this approach are:
+            //          1. It messes with the output - notably it excludes the <!DOCTYPE html> tag for some reason.
+            //          2. It means we can't use the template rendered for non-HTML which isn't common but is sort-of valid currently.
+            //          3. It means if there's malformed HTML for whatever reason, we're messing with it in a way that may not be predictable.
+            //       There's an alternative way in the JS below but that means the document loads with a bunch of invalid
+            //       attribute values initially which has its own problems.
+            //       Ultimately it would be good to instead be parsing the HTML as we go inside SSTemplateParser and
+            //       only include the preview data comments when it's safe to do so - but that's a lot more work than
+            //       I wanna do for a POC.
+            $html5 = new HTML5();
+            // disable_html_ns must be true or else we get a bunch of extra <br> that weren't there before...
+            // probably that is preventable in other ways but this worked for now.
+            $dom = $html5->loadHTMLFragment($output, ['disable_html_ns' => true]);
+            $nodeStack = [$dom];
+            do {
+                $currNode = array_pop($nodeStack);
+                if ($currNode->hasAttributes()) {
+                    foreach ($currNode->attributes as $attribute) {
+                        $attribute->value = preg_replace(['/<!-- _SS_PREVIEW_DATA_START [^>]+>/', '/<!-- _SS_PREVIEW_DATA_END [^>]+>/'], '', $attribute->value);
+                    }
+                }
+                // The title gets messed up. Just avoid that the hacky way for now.
+                if (strtolower($currNode->nodeName) === 'title') {
+                        $currNode->textContent = preg_replace(['/<!-- _SS_PREVIEW_DATA_START [^>]+>/', '/<!-- _SS_PREVIEW_DATA_END [^>]+>/'], '', $currNode->textContent);
+                }
+                if ($currNode->hasChildNodes()) {
+                    $nodeStack = array_merge($nodeStack, iterator_to_array($currNode->childNodes->getIterator()));
+                }
+            } while (!empty($nodeStack));
+            $output = $dom->ownerDocument->saveHTML($dom);
+
+
+            // When previewing, inject some JavaScript that does two main things:
+            // 1. ~~Remove preview data from inside HTML element's attributes. It shouldn't be there in the first place, this is just a POC hack.~~
+            // 2. Build a map of preview data comments and allow fetching elements that need to be updated for a given field on a given record.
+            // 3. Listens for changes to fields and updates the DOM appropriately
+            // Number 1 will not be used in a real world, because we'd implement the injection in a more robust way to start with.
+            // Numbers 2 and 3 probably belongs in silverstripe/admin or at the very least should be in its own .js file and included with the requirements API.
+            $output = str_replace('</body>', PHP_EOL .
+            <<<'EOL'
+                <script>
+                // Not needed with the HTML parsing above - but that HTML parsing has its downsides too.
+                // // This will remove the preview data from inside HTML attributes.
+                // // It would be better to just not have them there - one way to avoid them being there
+                // // would be to parse the HTML after rendering it which might be a better option
+                // // We probably want smarter behaviour for adding the extra preview data in the first place
+                // // but for the POC this will do.
+                // //
+                // // THEORETICALLY we could use this to update usage of fields in attributes as well
+                // // but at least for the initial launch of the feature that's probably not worth the hassle.
+                // elems = document.getElementsByTagName("*");
+                // for (const el of elems) {
+                //     if (!el.hasAttributes()) {
+                //         continue;
+                //     }
+                //     for (const attr of el.attributes) {
+                //         el.setAttribute(attr.name, el.getAttribute(attr.name).replace(/<!-- _SS_PREVIEW_DATA_START [^>]+>/, '').replace(/<!-- _SS_PREVIEW_DATA_END [^>]+>/, ''));
+                //     }
+                // }
+
+                // This will build a map of all preview data comments so we can easily find relevant bits to update
+                function _SS_PREVIEW_DATA_getKey(data) {
+                    return Object.entries(data).flat().join();
+                }
+                const _SS_PREVIEW_DATA_COMMENTS = {};
+                commentsIterator = document.createTreeWalker(
+                    document,
+                    NodeFilter.SHOW_COMMENT,
+                    null,
+                    false
+                );
+                curnode = null;
+                while (currnode = commentsIterator.nextNode()) {
+                    const startMatches = currnode.textContent?.match(/^\s*_SS_PREVIEW_DATA_START data-class=`(?<classname>[^`]*)` data-id=`(?<id>[^`]*)` data-field=`(?<field>[^`]*)`/);
+                    if (startMatches) {
+                        if (!_SS_PREVIEW_DATA_COMMENTS[_SS_PREVIEW_DATA_getKey(startMatches.groups)]) {
+                            _SS_PREVIEW_DATA_COMMENTS[_SS_PREVIEW_DATA_getKey(startMatches.groups)] = [];
+                        }
+                        _SS_PREVIEW_DATA_COMMENTS[_SS_PREVIEW_DATA_getKey(startMatches.groups)].push(currnode);
+                    }
+                }
+
+                // This function allows us to get all nodes for a given field that need to be updated.
+                // It's a multi-dimensional array.
+                // The top layer represents each instance of the field being rendered.
+                // The second layer is all the elements for that rendering.
+                // e.g. if Content has multiple paragraphs but is only used once in the template, you may get this structure returned:
+                //      [{comment: commentnode, instances: [<p></p>,<p></p>] }]
+                function _SS_PREVIEW_DATA_getElementsToUpdate(classname, id, field) {
+                    const datakey = _SS_PREVIEW_DATA_getKey({classname, id, field});
+                    const comments = _SS_PREVIEW_DATA_COMMENTS[datakey];
+                    if (!comments) {
+                        return [];
+                    }
+                    let sibling = null;
+                    const elems = [];
+                    for (const comment of comments) {
+                        const commentElems = [];
+                        sibling = comment.nextSibling;
+                        // NOTE: They may be nested but that's not in the sibling so this should still work.
+                        while (sibling && (sibling.nodeType !== document.COMMENT_NODE || !sibling.textContent?.match(/^\s*_SS_PREVIEW_DATA_END/))) {
+                            commentElems.push(sibling);
+                            sibling = sibling.nextSibling;
+                        }
+                        elems.push({comment, elements: commentElems});
+                    }
+                    return elems;
+                }
+
+                // This sets up messaging using the PostMessage API so that the CMS can tell us (in the iframe) what has updated.
+                // This should probably be replaced with the Channel Messaging API (see https://javascriptbit.com/transfer-data-between-parent-window-iframe-channel-messaging-api/)
+                // which is more robust (e.g. we know the message comes from the CMS and not from something else in the project) and slightly more secure
+                // But it also requires a bit more boiler plate so I skipped that for this POC.
+                window.addEventListener('message', function(event) {
+                    // @TODO Better handling for the unlikely case where there's other messages passed.
+                    // e.g. one of my react dev tools extensions uses the 'message' event.
+                    if (!event.data.className) {
+                        return;
+                    }
+                    console.log({messageRecieved: event.data}); // debugging
+                    const toUpdate = _SS_PREVIEW_DATA_getElementsToUpdate(event.data.className, event.data.id, event.data.field);
+                    for (const instance of toUpdate) {
+                        // If there's multiple nodes in this instance, get rid of the extras
+                        if (instance.elements.length > 1) {
+                            for (const $i = 1; $i < instance.elements.length; $i++) {
+                                instance.elements[$i].remove();
+                            }
+                        }
+                        // If there's no nodes, the value would have been null before - so we have to add it as a sibling
+                        if (instance.elements.length === 0) {
+                            instance.comment.after(event.data.value);
+                            return;
+                        }
+                        // Replace with the value we set in the CMS.
+                        // @TODO This is pretty garbo lol. We'll want to do a few things:
+                        // 1. probably set up a low-touch endpoint to hydrate the record with the new value and ask it to give us the rendered value back (e.g. so it has the correct casting)
+                        // 2. Handle HTML vs non-HTML values
+                        // ??? probably other improvements.
+                        instance.elements[0].replaceWith(event.data.value);
+                    }
+                });
+                </script>
+            EOL . PHP_EOL . '</body>', $output);
+        }
 
         array_pop(SSTemplateEngine::$topLevel);
 

@@ -1,0 +1,17 @@
+---
+Name: template-engine-js
+---
+SilverStripe\Admin\LeftAndMain:
+  extra_requirements_javascript:
+    - silverstripe/template-engine:client/dist/cms-to-iframe.js
+
+---
+Name: template-engine-middleware
+After:
+  - requestprocessors
+---
+SilverStripe\Core\Injector\Injector:
+  SilverStripe\Control\Director:
+    properties:
+      Middlewares:
+        CustomMiddleware: '%$SilverStripe\TemplateEngine\Middleware\CMSPreviewMiddleware'

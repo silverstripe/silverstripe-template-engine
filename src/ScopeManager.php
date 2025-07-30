@@ -7,6 +7,8 @@ use Iterator;
 use LogicException;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\Core\Injector\Injector;
+use SilverStripe\ORM\FieldType\DBField;
+use SilverStripe\TemplateEngine\Middleware\CMSPreviewMiddleware;
 use SilverStripe\View\SSViewer;
 use SilverStripe\View\TemplateGlobalProvider;
 use SilverStripe\View\ViewLayerData;
@@ -123,6 +125,10 @@ class ScopeManager
      */
     protected array $underlay;
 
+    // @TODO maybe delete.... but maybe this is a way to get the stack of accessed field names.
+    //       That way we can trace MyDate.Nice and know we're looking for the MyDate field for live preview updates.
+    private array $accessStack = [];
+
     public function __construct(
         ?ViewLayerData $item,
         array $overlay = [],
@@ -183,6 +189,7 @@ class ScopeManager
         // $Up and $Top need to restore the overlay from the parent and top-level scope respectively.
         switch ($name) {
             case 'Up':
+                array_pop($this->accessStack);
                 $upIndex = $this->getUpIndex();
                 if ($upIndex === null) {
                     throw new \LogicException('Up called when we\'re already at the top of the scope');
@@ -201,6 +208,7 @@ class ScopeManager
             case 'Top':
                 $overlayIndex = 0; // Top-level scope
                 $this->preserveOverlay = true; // Preserve overlay
+                $this->accessStack = [];
                 list(
                     $this->item,
                     $this->itemIterator,
@@ -211,6 +219,7 @@ class ScopeManager
                 ) = $this->itemStack[0];
                 break;
             default:
+                $this->accessStack[] = $name;
                 $this->preserveOverlay = false;
                 $this->item = $this->getObj($name, $arguments);
                 $this->itemIterator = null;
@@ -259,6 +268,7 @@ class ScopeManager
      */
     public function pushScope(): static
     {
+        // @TODO see how/if this, popstack, and next affect $this->accessStack
         $newLocalIndex = count($this->itemStack ?? []) - 1;
 
         $this->popIndex = $this->itemStack[$newLocalIndex][ScopeManager::POP_INDEX] = $this->localIndex;
@@ -360,6 +370,49 @@ class ScopeManager
     }
 
     /**
+     * Get the value that will be directly rendered in the template.
+     */
+    public function getOutputValue1(string $name, array $arguments): string
+    {
+        $curr = $this->getCurrentItem();
+        $accessName = $name;
+        if ($curr && is_a($curr->ClassName->__toString(), DBField::class, true) && $this->currentIndex > 0) {
+            // @TODO would need to recursively loop 'til we either don't have a DBField or we run out of index
+            //       Even then we're not guaranteed to be at the right place.
+            //       This also doesn't tell us what path took us here, e.g. we know this is Nice, but what field was Nice called on?
+            $curr = $this->itemStack[$this->currentIndex - 1][0];
+            // @TODO test this with some rigor, and apply the same recursion as above.
+            //       Also when we start re-fetching values for correct casting we'll want to append $name, e.g. "MyDate.Nice"
+            $accessName = $this->accessStack[array_key_last($this->accessStack)];
+        }
+        $retval = $this->getObj($name, $arguments);
+        $this->resetLocalScope();
+        // Shove in some comments that tell us what needs to be replaced if we update a field in the CMS.
+        // @TODO still needs some work - e.g:
+        // 1. This gets blasted inside HTML attributes and we have to hack it out
+        // 2. Similar to 1 - because this doesn't know when it's inside an HTML element that hasn't closed yet, forms etc just completely fall over.
+        //    E.g. <img $AttributesHTML /> becomes <img <!-- _SS_PREVIEW_DATA_START etc --><!-- _SS_PREVIEW_DATA_END --> />
+        //    Because the comment is INSIDE the element, it doesn't get treated as a comment. Instead where the comment gets closed that's actually closing the img tag!!
+        // 3. This currently has to be a separate method so it doesn't affect passing values into method calls etc (probably fine)
+        // 4. I don't think this takes explicit method calls into account e.g. $getTitle() or $Title() (probably fine, just document it. We can probably handle it if we want but requires adding args etc to the comment data)
+        // 5. It doesn't understand that $getTitle is the same as $Title... but we can probably handle that on the JS side if we care about it
+        // 6. I'm not sure what to do when $curr is null... for now I just skip it.
+        // 7. Goes hand-in-hand with some of the above, but as a general callout - SOME things just won't be updatable with live preview without re-rendering the whole damn thing.
+        if ($curr !== null && CMSPreviewMiddleware::isCmsPreview()) {
+            // $reflectionData = new ReflectionProperty($retval, 'data');
+            // $obj = $reflectionData->getValue($retval);
+            return sprintf(
+                '<!-- _SS_PREVIEW_DATA_START data-class=`%s` data-id=`%s` data-field=`%s` -->%s<!-- _SS_PREVIEW_DATA_END -->',
+                $curr->ClassName,
+                $curr->ID,
+                $accessName,
+                $retval?->__toString() ?? ''
+            );
+        }
+        return $retval === null ? '' : $retval->__toString();
+    }
+
+    /**
      * Get the value to pass as an argument to a method.
      */
     public function getValueAsArgument(string $name, array $arguments): mixed
@@ -416,6 +469,7 @@ class ScopeManager
      */
     protected function resetLocalScope()
     {
+        // @TODO figure out how to deal with $this->accessStack.... probably keep that in the item stack??
         // Restore previous un-completed lookup chain if set
         $previousLocalState = $this->localStack ? array_pop($this->localStack) : null;
         array_splice($this->itemStack, $this->localIndex + 1, count($this->itemStack ?? []), $previousLocalState);
