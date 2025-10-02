@@ -15,6 +15,8 @@ use SilverStripe\View\ViewLayerData;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Adapter\NullAdapter;
 use Symfony\Component\Cache\Psr16Cache;
+use SilverStripe\Core\Flushable;
+use SilverStripe\Core\ClassInfo;
 
 // Not actually a data object, we just want a ModelData object that's just for us
 
@@ -54,6 +56,24 @@ class SSTemplateEngineCacheBlockTest extends SapphireTest
 
         Injector::inst()->registerService($cache, CacheInterface::class . '.cacheblock');
         Injector::inst()->get(CacheInterface::class . '.cacheblock')->clear();
+    }
+
+    /**
+     * Flush all the flushable classes
+     *
+     * This code is taken from CoreKernel::boot() is used rather than:
+     * Injector::inst()->get(Kernel::class)->boot(true);
+     * Director::test('/?flush=1');
+     *
+     * To prevent the warning: "Test code or tested code removed error handlers other than its own"
+     * And also to prevent weird cross-test issues when running phpunit on kitchen sink
+     */
+    protected function flush()
+    {
+        foreach (ClassInfo::implementorsOf(Flushable::class) as $class) {
+            /** @var Flushable|string $class */
+            $class::flush();
+        }
     }
 
     protected function runtemplate($template, $data = null)
@@ -148,20 +168,17 @@ class SSTemplateEngineCacheBlockTest extends SapphireTest
      */
     public function testBlocksInvalidateOnFlush()
     {
-        Director::test('/?flush=1');
+        $this->flush();
         $this->reset(true);
 
-        // Generate cached value for foo = 1
+        // // Generate cached value for foo = 1
         $this->assertEquals('1', $this->runtemplate('<% cached %>$Foo<% end_cached %>', ['Foo' => 1]));
 
         // Test without flush
-        Injector::inst()->get(Kernel::class)->boot();
-        Director::test('/');
         $this->assertEquals('1', $this->runtemplate('<% cached %>$Foo<% end_cached %>', ['Foo' => 3]));
 
         // Test with flush
-        Injector::inst()->get(Kernel::class)->boot(true);
-        Director::test('/?flush=1');
+        $this->flush();
         $this->assertEquals('2', $this->runtemplate('<% cached %>$Foo<% end_cached %>', ['Foo' => 2]));
     }
 
