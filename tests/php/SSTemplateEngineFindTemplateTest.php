@@ -66,8 +66,6 @@ class SSTemplateEngineFindTemplateTest extends SapphireTest
         $base = ThemeResourceLoader::inst()->getBase();
         $engine = new SSTemplateEngine();
         $reflectionFindTemplate = new ReflectionMethod($engine, 'findTemplate');
-        $reflectionFindTemplate->setAccessible(true);
-
         $this->assertEquals(
             "$base/module/templates/Page.ss",
             $reflectionFindTemplate->invoke($engine, 'Page', ['$default'])
@@ -84,8 +82,6 @@ class SSTemplateEngineFindTemplateTest extends SapphireTest
         $base = ThemeResourceLoader::inst()->getBase();
         $engine = new SSTemplateEngine();
         $reflectionFindTemplate = new ReflectionMethod($engine, 'findTemplate');
-        $reflectionFindTemplate->setAccessible(true);
-
         // Without including the theme this template cannot be found
         $this->assertEquals(null, $reflectionFindTemplate->invoke($engine, 'NestedThemePage', ['$default']));
 
@@ -120,8 +116,6 @@ class SSTemplateEngineFindTemplateTest extends SapphireTest
         $base = ThemeResourceLoader::inst()->getBase();
         $engine = new SSTemplateEngine();
         $reflectionFindTemplate = new ReflectionMethod($engine, 'findTemplate');
-        $reflectionFindTemplate->setAccessible(true);
-
         // Test that "type" is respected properly
         $this->assertEquals(
             "{$base}/module/templates/MyNamespace/Layout/MyClass.ss",
@@ -176,8 +170,6 @@ class SSTemplateEngineFindTemplateTest extends SapphireTest
         $base = ThemeResourceLoader::inst()->getBase();
         $engine = new SSTemplateEngine();
         $reflectionFindTemplate = new ReflectionMethod($engine, 'findTemplate');
-        $reflectionFindTemplate->setAccessible(true);
-
         // Items given as full paths are returned directly
         $this->assertEquals(
             "$base/themes/theme/templates/Page.ss",
@@ -218,8 +210,6 @@ class SSTemplateEngineFindTemplateTest extends SapphireTest
         $base = ThemeResourceLoader::inst()->getBase();
         $engine = new SSTemplateEngine();
         $reflectionFindTemplate = new ReflectionMethod($engine, 'findTemplate');
-        $reflectionFindTemplate->setAccessible(true);
-
         $this->assertEquals(
             "$base/themes/theme/templates/Page.ss",
             $reflectionFindTemplate->invoke($engine, 'Page', ['theme'])
@@ -239,8 +229,6 @@ class SSTemplateEngineFindTemplateTest extends SapphireTest
         $base = ThemeResourceLoader::inst()->getBase();
         $engine = new SSTemplateEngine();
         $reflectionFindTemplate = new ReflectionMethod($engine, 'findTemplate');
-        $reflectionFindTemplate->setAccessible(true);
-
         $templates = [
             $base . '/myproject/templates/Page.ss',
             $base . '/myproject/templates/Layout/Page.ss'
@@ -274,8 +262,6 @@ class SSTemplateEngineFindTemplateTest extends SapphireTest
         $base = ThemeResourceLoader::inst()->getBase();
         $engine = new SSTemplateEngine();
         $reflectionFindTemplate = new ReflectionMethod($engine, 'findTemplate');
-        $reflectionFindTemplate->setAccessible(true);
-
         $this->assertEquals(
             "$base/themes/theme/templates/CustomThemePage.ss",
             $reflectionFindTemplate->invoke($engine, 'CustomThemePage', ['theme', '$default'])
@@ -297,8 +283,6 @@ class SSTemplateEngineFindTemplateTest extends SapphireTest
 
         $engine = new SSTemplateEngine();
         $reflectionFindTemplate = new ReflectionMethod($engine, 'findTemplate');
-        $reflectionFindTemplate->setAccessible(true);
-
         $reflectionFindTemplate->invoke($engine, 'Page', ['$default']);
     }
 
@@ -312,8 +296,6 @@ class SSTemplateEngineFindTemplateTest extends SapphireTest
 
         $engine = new SSTemplateEngine();
         $reflectionFindTemplate = new ReflectionMethod($engine, 'findTemplate');
-        $reflectionFindTemplate->setAccessible(true);
-
         $result = $reflectionFindTemplate->invoke($engine, 'Page', ['$default']);
         $this->assertSame('mock_template.ss', $result);
     }
