@@ -1625,7 +1625,9 @@ class SSTemplateParser extends Parser implements TemplateParser
     function Argument_QuotedString(&$res, $sub)
     {
         $res['ArgumentMode'] = 'string';
-        $res['php'] = "'" . str_replace("'", "\\'", $sub['String']['text'] ?? '') . "'";
+        // var_export escapes both the backslash and the quote, so author text cannot break out of
+        // the emitted single-quoted literal into executable PHP.
+        $res['php'] = var_export($sub['String']['text'] ?? '', true);
     }
 
     function Argument_Null(&$res, $sub)
@@ -1661,7 +1663,9 @@ class SSTemplateParser extends Parser implements TemplateParser
     function Argument_FreeString(&$res, $sub)
     {
         $res['ArgumentMode'] = 'string';
-        $res['php'] = "'" . str_replace("'", "\\'", trim($sub['text'] ?? '')) . "'";
+        // var_export escapes both the backslash and the quote, so author text cannot break out of
+        // the emitted single-quoted literal into executable PHP.
+        $res['php'] = var_export(trim($sub['text'] ?? ''), true);
     }
 
     /* ComparisonOperator: "!=" | "==" | ">=" | ">" | "<=" | "<" | "=" */
@@ -2400,7 +2404,9 @@ class SSTemplateParser extends Parser implements TemplateParser
 
     function CacheBlockArgument_QuotedString(&$res, $sub)
     {
-        $res['php'] = "'" . str_replace("'", "\\'", $sub['String']['text'] ?? '') . "'";
+        // var_export escapes both the backslash and the quote, so author text cannot break out of
+        // the emitted single-quoted literal into executable PHP.
+        $res['php'] = var_export($sub['String']['text'] ?? '', true);
     }
 
     function CacheBlockArgument_Lookup(&$res, $sub)
