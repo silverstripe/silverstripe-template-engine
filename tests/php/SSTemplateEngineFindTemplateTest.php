@@ -221,6 +221,32 @@ class SSTemplateEngineFindTemplateTest extends SapphireTest
         $this->assertNull(
             $reflectionFindTemplate->invoke($engine, 'file://' . $realTemplate, ['theme'])
         );
+        $this->assertNull(
+            $reflectionFindTemplate->invoke($engine, 'php://filter/resource=' . $realTemplate, ['theme'])
+        );
+        // A null byte must be rejected rather than throwing
+        $this->assertNull(
+            $reflectionFindTemplate->invoke($engine, $realTemplate . "\0.ss", ['theme'])
+        );
+    }
+
+    public function testFindTemplateByRelativePath()
+    {
+        $base = ThemeResourceLoader::inst()->getBase();
+        $engine = new SSTemplateEngine();
+        $reflectionFindTemplate = new ReflectionMethod($engine, 'findTemplate');
+        $reflectionFindTemplate->setAccessible(true);
+        $cwd = getcwd();
+        try {
+            chdir("$base/themes/theme/templates");
+            // Relative paths resolve against the working directory, as they did with file_exists()
+            $this->assertEquals(
+                'Page.ss',
+                $reflectionFindTemplate->invoke($engine, 'Page.ss', ['theme'])
+            );
+        } finally {
+            chdir($cwd);
+        }
     }
 
     /**
