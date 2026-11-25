@@ -202,6 +202,27 @@ class SSTemplateEngineFindTemplateTest extends SapphireTest
         );
     }
 
+    public function testRejectsStreamWrapperPaths()
+    {
+        $base = ThemeResourceLoader::inst()->getBase();
+        $engine = new SSTemplateEngine();
+        $reflectionFindTemplate = new ReflectionMethod($engine, 'findTemplate');
+        $reflectionFindTemplate->setAccessible(true);
+        $realTemplate = "$base/themes/theme/templates/Page.ss";
+        // Sanity check: the plain local path resolves.
+        $this->assertEquals(
+            $realTemplate,
+            $reflectionFindTemplate->invoke($engine, $realTemplate, ['theme'])
+        );
+        // A stream-wrapper path pointing at the same file must NOT resolve, even though
+        // file_exists() honours the wrapper. Otherwise remote (ftp://, http://) or other
+        // non-local .ss templates could be loaded, compiled and executed.
+        $this->assertTrue(file_exists('file://' . $realTemplate));
+        $this->assertNull(
+            $reflectionFindTemplate->invoke($engine, 'file://' . $realTemplate, ['theme'])
+        );
+    }
+
     /**
      * Test that 'main' and 'Layout' templates are loaded from set theme
      */
