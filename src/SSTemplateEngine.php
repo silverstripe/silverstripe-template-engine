@@ -447,12 +447,11 @@ class SSTemplateEngine implements TemplateEngine, Flushable
             // If we have an .ss extension, this is a path, not a template name. We should
             // pass in templates without extensions in order for template manifest to find
             // files dynamically.
-            // A template path must be local - a stream wrapper such as ftp:// or php:// would
-            // otherwise be fetched and compiled to PHP, so reject any scheme-prefixed path.
+            // A template path must be a local file - a stream wrapper such as ftp:// or phar://
+            // would otherwise be fetched and compiled to PHP.
             if (
                 substr($template ?? '', -3) == '.ss'
-                && !preg_match('#^[a-z][a-z0-9+.\-]*://#i', $template ?? '')
-                && file_exists($template ?? '')
+                && Path::resolveLocalFile($template) !== null
             ) {
                 $cacheAdapter->set($cacheKey, $template);
                 return $template;
